@@ -12,6 +12,7 @@
     "check:mermaid": "node scripts/mermaid-check.mjs ../README.md ../docs/01-architecture.md ../docs/05-langgraph-and-langsmith.md"
   },
   "dependencies": {
+    "@langchain/core": "^1.2.18",
     "@langchain/langgraph-sdk": "^1.12.4",
     "next": "16.4.0",
     "react": "19.3.0",

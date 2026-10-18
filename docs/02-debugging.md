@@ -323,6 +323,22 @@ lock at all. On npm, upgrades plus `overrides` for the transitive packages;
 you run from libraries you ship, and let the alert list tell you which is
 which.
 
+## 26. A dependency that was never declared, revealed by a flag
+**Symptom.** Right after the dependency cleanup, `next build` failed on Vercel
+and in a clean `npm ci`: "Can't resolve '@langchain/core/messages'". Locally
+everything had built for a week.
+**Cause.** `@langchain/langgraph-sdk` imports `@langchain/core` but declares it
+only as a peer dependency. npm 7+ installs peers automatically, so it had
+always been there without being in `package.json`. Turning on
+`legacy-peer-deps` (to get vitest 4 past a peer conflict) switched that off,
+and the undeclared import surfaced.
+**Fix.** Declare `@langchain/core` in `dependencies` at the SDK's peer range.
+The clean-room `npm ci` now lists it; the build passes.
+**Lesson.** Anything you import, you declare. Automatic peer installation is a
+convenience that hides missing declarations until some unrelated setting
+changes. A clean-room `npm ci` into an empty directory is the cheapest way to
+find them.
+
 ## Toolkit cheat-sheet
 
 | Question | Tool |
