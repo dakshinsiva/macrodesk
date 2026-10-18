@@ -240,7 +240,7 @@ function HowItWorks() {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted mt-4">
         <a className="hover:text-fg" href="https://github.com/dakshinsiva/macrodesk" target="_blank" rel="noreferrer">Source on GitHub</a>
-        <a className="hover:text-fg" href="https://github.com/dakshinsiva/macrodesk/blob/main/docs/02-debugging.md" target="_blank" rel="noreferrer">Debugging log (24 incidents)</a>
+        <a className="hover:text-fg" href="https://github.com/dakshinsiva/macrodesk/blob/main/docs/02-debugging.md" target="_blank" rel="noreferrer">Debugging log (25 incidents)</a>
         <a className="hover:text-fg" href="https://fred.stlouisfed.org" target="_blank" rel="noreferrer">Data: FRED, St. Louis Fed</a>
         <span>Built with LangGraph, Claude, Next.js</span>
       </div>

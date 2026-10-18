@@ -1,0 +1,74 @@
+[
+ {
+  "id": "ok_cited_and_derived",
+  "truth": "approve",
+  "det_reject": false,
+  "det_issues": []
+ },
+ {
+  "id": "unit_error_thousands",
+  "truth": "reject",
+  "det_reject": true,
+  "det_issues": [
+   "Unit error: '7,180,420 thousand' multiplies a value that the evidence already gives in thousands."
+  ]
+ },
+ {
+  "id": "memory_peak_uncited",
+  "truth": "reject",
+  "det_reject": true,
+  "det_issues": [
+   "The number 3.0 % does not appear in the evidence and is not a difference or percent change between evidence values."
+  ]
+ },
+ {
+  "id": "wrong_date_cited",
+  "truth": "reject",
+  "det_reject": true,
+  "det_issues": [
+   "Cites (UNRATE, 2026-10-01) but date 2026-10-01 does not appear in the evidence."
+  ]
+ },
+ {
+  "id": "ok_percent_of_target_from_question",
+  "truth": "approve",
+  "det_reject": false,
+  "det_issues": []
+ },
+ {
+  "id": "ok_counts_and_years",
+  "truth": "approve",
+  "det_reject": false,
+  "det_issues": []
+ },
+ {
+  "id": "series_not_fetched",
+  "truth": "reject",
+  "det_reject": true,
+  "det_issues": [
+   "Cites (UNRATE, 2026-09-01) but no evidence for series UNRATE was fetched.",
+   "The number 4.2 % does not appear in the evidence and is not a difference or percent change between evidence values."
+  ]
+ },
+ {
+  "id": "ok_qualified_window_peak",
+  "truth": "approve",
+  "det_reject": false,
+  "det_issues": []
+ },
+ {
+  "id": "fabricated_level",
+  "truth": "reject",
+  "det_reject": true,
+  "det_issues": [
+   "Cites (ICSA, 2026-01-10) but date 2026-01-10 does not appear in the evidence.",
+   "The number 182,000 does not appear in the evidence and is not a difference or percent change between evidence values."
+  ]
+ },
+ {
+  "id": "ok_change_in_pp",
+  "truth": "approve",
+  "det_reject": false,
+  "det_issues": []
+ }
+]

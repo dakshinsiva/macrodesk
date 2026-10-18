@@ -164,7 +164,7 @@ uv run macrodesk brief                                       # outputs/brief-<da
 uv run pytest                                           # 45 offline tests, no keys needed
 uv run python evals/run_evals.py [--langsmith]          # 24 end-to-end cases, scored; optional LangSmith experiment
 uv run python evals/run_critic_evals.py [--llm]         # the critic measured against labelled drafts
-uv run langgraph dev                                    # LangGraph server + Studio
+scripts/studio.sh                                       # LangGraph server + Studio (CLI layered on with `uv run --with`; not in the lock file)
 ```
 
 The research desk, against that server:
@@ -236,7 +236,7 @@ design, single-machine persistence, six eval cases, one model tuned.
 
 ## Debugging log
 
-Twenty-four incidents so far, each with the symptom, how it was localised and the fix:
+Twenty-five incidents so far, each with the symptom, how it was localised and the fix:
 a native wheel that tried to compile Rust, a gateway that silently rewrote the model endpoint, a
 400 from a prompt with no user turn (twice: once in Studio, once in my own critic), a circular
 import, Pydantic objects in checkpointed state, a critic that rejected correct arithmetic, two

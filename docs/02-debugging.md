@@ -307,6 +307,22 @@ an afternoon.
 **Lesson.** Size protective limits from a measured session, and run the
 protection in the same audit as the features it protects.
 
+## 25. Dependabot: a pin I set on day one became the biggest alert
+**Symptom.** After a push GitHub reported 12 vulnerabilities, 3 critical.
+Half were `cryptography` ranges in `uv.lock`, held back by the
+`cryptography<46` constraint from note 2, because current releases ship no
+wheel for Intel Macs. The rest were dev-only npm packages, most of them pulled
+in by `mermaid`, which I had just added for the diagram check.
+**Fix.** The Studio CLI is a developer tool, not something the agent imports,
+so it left the project entirely: `scripts/studio.sh` layers it on with
+`uv run --with` for one invocation (with the old pin only on Intel Macs), and `cryptography` is no longer in the
+lock at all. On npm, upgrades plus `overrides` for the transitive packages;
+`npm audit --omit=dev` is clean, and what remains is dev-only tooling behind
+`eslint-config-next`.
+**Lesson.** A workaround pin is a liability with a half-life. Separate tools
+you run from libraries you ship, and let the alert list tell you which is
+which.
+
 ## Toolkit cheat-sheet
 
 | Question | Tool |
@@ -316,7 +332,7 @@ protection in the same audit as the features it protects.
 | What happened N steps ago? | `/history` -> `graph.get_state_history(config)` |
 | Re-run from an earlier point | `/replay N` -> stream with `checkpoint_id` in config |
 | Approve/edit a plan mid-run | Stage 2 `review` interrupt -> `Command(resume=...)` |
-| Visual step-through | `uv run langgraph dev` -> Studio |
+| Visual step-through | `scripts/studio.sh` (which runs `langgraph dev` through `uv run --with`) -> Studio |
 | Hosted traces, token costs | `LANGSMITH_TRACING=true` |
 | Deterministic repro without the API | `tests/test_graph.py` scripted model pattern |
 | Did a prompt change help or hurt? | `uv run python evals/run_evals.py` before and after |
