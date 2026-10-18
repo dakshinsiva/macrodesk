@@ -45,15 +45,15 @@ they are the part of this repository most worth reading: [docs/02-debugging.md](
 
 ```mermaid
 flowchart LR
-    Q[question] --> P[planner\nstructured output: which series, which tools]
-    P --> R{review\ninterrupt: approve or edit}
-    R -- feedback --> P
-    R -- approve --> F[fetch\nruns the plan, no LLM]
-    F --> A[analyst\nwrites from evidence only]
-    A --> C{critic\nregex citation check + LLM fact-check}
-    C -- reject, max 2 --> A
-    C -- approve --> Z[answer\ncited, linked, downloadable]
-    M[(Store\nremembered plan feedback)] -.-> P
+    Q["question"] --> P["planner<br/>structured output: which series, which tools"]
+    P --> R{"review<br/>interrupt: approve or edit"}
+    R -- "feedback" --> P
+    R -- "approve" --> F["fetch<br/>runs the plan, no LLM"]
+    F --> A["analyst<br/>writes from evidence only"]
+    A --> C{"critic<br/>citation + number checks, then an LLM pass"}
+    C -- "reject, max 2" --> A
+    C -- "approve" --> Z["answer<br/>cited, linked, downloadable"]
+    M[("Store<br/>remembered plan feedback")] -.-> P
     R -.-> M
 ```
 

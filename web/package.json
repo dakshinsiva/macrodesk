@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check:mermaid": "node scripts/mermaid-check.mjs ../README.md ../docs/01-architecture.md ../docs/05-langgraph-and-langsmith.md"
   },
   "dependencies": {
     "@langchain/langgraph-sdk": "^1.12.4",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
+    "mermaid": "^11.4.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.4"

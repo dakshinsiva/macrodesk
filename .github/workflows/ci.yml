@@ -35,6 +35,7 @@ jobs:
         env:
           NEXT_PUBLIC_DEMO: "1"
       - run: npx playwright install --with-deps chromium
+      - run: npm run check:mermaid      # README diagrams must parse with Mermaid (what GitHub renders)
       - run: npx playwright test
         env:
           NEXT_PUBLIC_DEMO: "1"
