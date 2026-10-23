@@ -22,9 +22,20 @@ class FakeFred:
         self.calls: list[tuple] = []
         self._data = json.loads((FIXTURES / "series.json").read_text())
 
-    def get_series(self, series_id: str, start=None, end=None) -> pd.Series:
+    SYNTHETIC = {"DGS1MO": ("DGS3MO", 0.05), "DGS6MO": ("DGS3MO", -0.05), "DGS1": ("DGS2", -0.2),
+                 "DGS3": ("DGS2", 0.1), "DGS5": ("DGS10", -0.3), "DGS7": ("DGS10", -0.1), "DGS20": ("DGS30", -0.1),
+                 "CAUR": ("UNRATE", 1.2), "TXUR": ("UNRATE", -0.1), "NYUR": ("UNRATE", 0.2)}
+
+    def get_series(self, series_id: str, start=None, end=None, units=None, frequency=None, aggregation=None) -> pd.Series:
         sid = series_id.upper()
         self.calls.append(("get_series", sid, start, end))
+        if units or frequency:
+            self.calls[-1] = ("get_series", sid, start, end, units, frequency, aggregation)
+        if sid in self.SYNTHETIC and sid not in self._data:
+            base, off = self.SYNTHETIC[sid]
+            b = self._data[base]
+            s = pd.Series([v + off for v in b["values"]], index=pd.to_datetime(b["dates"]), name=sid)
+            return s[(s.index >= pd.Timestamp(start)) if start else slice(None)] if start else s
         if sid not in self._data:
             raise FredError(f"FRED series {sid!r} was not found. Use search_fred to find the right id.")
         s = pd.Series(self._data[sid]["values"], index=pd.to_datetime(self._data[sid]["dates"]), name=sid)

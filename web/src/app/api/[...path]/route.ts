@@ -56,7 +56,11 @@ async function forward(req: NextRequest, ctx: { params: Promise<{ path: string[]
   headers.set("accept", req.headers.get("accept") ?? "application/json");
   if (process.env.LANGSMITH_API_KEY) headers.set("x-api-key", process.env.LANGSMITH_API_KEY);
 
-  const init: RequestInit & { duplex?: "half" } = { method: req.method, headers, signal: req.signal };
+  // Short requests get a deadline so a hung backend fails fast (the desk then falls back to the demo);
+  // streaming runs are left open and end when the client disconnects.
+  const streaming = /\/runs\/(stream|[^/]+\/(stream|join))$/.test(joined) || /\/runs\/wait$/.test(joined);
+  const signal = streaming ? req.signal : AbortSignal.any([req.signal, AbortSignal.timeout(joined === "info" ? 4000 : 20000)]);
+  const init: RequestInit & { duplex?: "half" } = { method: req.method, headers, signal };
   if (req.method !== "GET" && req.method !== "HEAD") {
     init.body = req.body;
     init.duplex = "half";
@@ -66,7 +70,8 @@ async function forward(req: NextRequest, ctx: { params: Promise<{ path: string[]
   try {
     upstream = await fetch(url, init);
   } catch (e) {
-    return Response.json({ error: "backend_unreachable", detail: String(e) }, { status: 502 });
+    const timedOut = (e as Error)?.name === "TimeoutError";
+    return Response.json({ error: timedOut ? "backend_timeout" : "backend_unreachable", detail: String(e) }, { status: timedOut ? 504 : 502 });
   }
   const out = new Headers();
   for (const k of ["content-type", "cache-control", "content-encoding"]) {

@@ -339,6 +339,19 @@ convenience that hides missing declarations until some unrelated setting
 changes. A clean-room `npm ci` into an empty directory is the cheapest way to
 find them.
 
+## 27. The desk hung forever on "Connecting to the agent…"
+**Symptom.** A new end-to-end test navigated from the monitor page back to the
+desk and timed out: the page never left its loading state.
+**Cause.** A LangGraph dev server from nine days earlier still held port 2024
+but answered nothing. The passthrough's `fetch` had no deadline and neither did
+the browser's mode probe, so a hung backend looked identical to a slow one,
+forever. A *down* backend had always worked: connection refused fails fast.
+**Fix.** Short passthrough requests get a deadline (4 s for `/info`, 20 s
+otherwise; streaming runs stay open) and return 504 on timeout; the mode probe
+aborts after 6 s and falls back to the replay. Then the stale server went.
+**Lesson.** Test the failure you don't expect: "down" and "hung" are different,
+and only the second needs a timeout to be survivable.
+
 ## Toolkit cheat-sheet
 
 | Question | Tool |

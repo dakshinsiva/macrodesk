@@ -106,3 +106,30 @@ def test_release_calendar(fake_fred):
 def test_macro_snapshot_lists_indicators(fake_fred):
     out = macro_snapshot.invoke({})
     assert "UNRATE" in out and "indicator" in out  # unknown series in the fixture are reported as ERROR rows, not raised
+
+
+# ---------------------------------------------------------------- transforms, curve, regions
+from macrodesk import tools as _t
+
+
+def test_get_series_passes_fred_transforms(fake_fred):
+    out = _t.get_series.invoke({"series_id": "UNRATE", "units": "pc1", "frequency": "q", "aggregation": "avg"})
+    assert "% change from a year ago, computed by FRED; frequency q (avg)" in out
+    assert fake_fred.calls[-1][4:] == ("pc1", "q", "avg")
+
+
+def test_get_series_rejects_unknown_transform(fake_fred):
+    assert _t.get_series.invoke({"series_id": "UNRATE", "units": "yoy"}).startswith("ERROR: units must be one of")
+
+
+def test_term_structure_lists_every_maturity(fake_fred):
+    out = _t.term_structure.invoke({"as_of": "2026-10-08"})
+    for lab in ("1M", "3M", "2Y", "10Y", "30Y"):
+        assert f"\n{lab} " in out
+    assert "inverted segments now:" in out and "Cite as (DGS10," in out
+
+
+def test_regional_compare_ranks_states_and_reports_missing(fake_fred):
+    out = _t.regional_compare.invoke({"states": ["CA", "TX", "NY", "ZZ"]})
+    assert "CA     CAUR" in out and "national UNRATE" in out and "not retrieved: ZZ" in out
+    assert "of 3 states have a higher rate" in out

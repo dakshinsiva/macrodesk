@@ -95,9 +95,13 @@ class FredClient:
         return f"FRED {call} failed: {raw}"
 
     # ---- public API --------------------------------------------------------
-    def get_series(self, series_id: str, start: str | None = None, end: str | None = None) -> pd.Series:
+    def get_series(self, series_id: str, start: str | None = None, end: str | None = None,
+                   units: str | None = None, frequency: str | None = None, aggregation: str | None = None) -> pd.Series:
+        """FRED observations. `units` (pc1 = % change from a year ago, pch, chg, ch1, log, ...) and
+        `frequency` + `aggregation` (e.g. q + avg) are computed by FRED server-side."""
+        extra = {k: v for k, v in (("units", units), ("frequency", frequency), ("aggregation_method", aggregation)) if v}
         s = self._cached("get_series", self._fred.get_series, series_id.upper(),
-                         observation_start=start, observation_end=end)
+                         observation_start=start, observation_end=end, **extra)
         if s is None or len(s) == 0:
             raise FredError(f"FRED returned no observations for {series_id!r} in [{start}, {end}].")
         s.name = series_id.upper()

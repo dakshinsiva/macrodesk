@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import type { Thread } from "@langchain/langgraph-sdk";
 import { Pipeline } from "./Pipeline";
@@ -32,7 +34,7 @@ async function detectMode(): Promise<Mode> {
   const forced = new URLSearchParams(window.location.search).get("demo") === "1" || process.env.NEXT_PUBLIC_DEMO === "1";
   if (forced) return "demo";
   try {
-    const r = await fetch("/api/info", { cache: "no-store" });
+    const r = await fetch("/api/info", { cache: "no-store", signal: AbortSignal.timeout(6000) });
     return r.ok ? "live" : "demo";
   } catch {
     return "demo";
@@ -50,6 +52,7 @@ export function Agent() {
 
 /* ------------------------------------------------------------------ live */
 function Live() {
+  const router = useRouter();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [active, setActive] = useState<NodeName | null>(null);
   const [done, setDone] = useState<NodeName[]>([]);
@@ -154,8 +157,17 @@ function Live() {
     else if (c === "/prefs") refresh();
     else if (c === "/brief") ask("Give me today's macro brief: labor market (JOLTS and unemployment), the yield curve, and growth and core inflation, with the latest readings and 12-month changes.");
     else if (c === "/demo") window.location.search = "?demo=1";
+    else if (c === "/monitor") router.push("/monitor");
     else if (c === "/help") alert("⌘K or / focuses the command line. Type a question, a series id (UNRATE) for its card, or / for commands.\nEnter approves a pending plan, E edits it, Esc cancels or closes.");
   };
+  // Deep link: /?q=... asks once on arrival (used by the monitor page's "ask the desk" buttons).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (!q) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    queueMicrotask(() => ask(q));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const lastRunSeconds = timings.length > 1 ? (timings[timings.length - 1].at - timings[0].at) / 1000 : null;
 
   return (
@@ -176,6 +188,7 @@ function Live() {
 
 /* ------------------------------------------------------------------ demo */
 function Demo() {
+  const router = useRouter();
   const d = useDemo();
   const [notice, setNotice] = useState<string | null>(null);
   // ?autoplay=0 keeps the landing state (used for screenshots and by the curious).
@@ -201,6 +214,7 @@ function Demo() {
   const replay = () => { setAutoplay(false); d.reset(); setTimeout(() => d.start(), 50); };
   const command = (c: string) => {
     if (c === "/demo" || c === "/new") replay();
+    else if (c === "/monitor") router.push("/monitor");
     else if (c === "/help") alert("⌘K or / focuses the command line. Type a series id (UNRATE) for its card. Questions run live when a backend is attached.");
     else setNotice("That command needs a live backend; this is the recorded replay.");
   };
@@ -240,7 +254,7 @@ function HowItWorks() {
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted mt-4">
         <a className="hover:text-fg" href="https://github.com/dakshinsiva/macrodesk" target="_blank" rel="noreferrer">Source on GitHub</a>
-        <a className="hover:text-fg" href="https://github.com/dakshinsiva/macrodesk/blob/main/docs/02-debugging.md" target="_blank" rel="noreferrer">Debugging log (26 incidents)</a>
+        <a className="hover:text-fg" href="https://github.com/dakshinsiva/macrodesk/blob/main/docs/02-debugging.md" target="_blank" rel="noreferrer">Debugging log (27 incidents)</a>
         <a className="hover:text-fg" href="https://fred.stlouisfed.org" target="_blank" rel="noreferrer">Data: FRED, St. Louis Fed</a>
         <span>Built with LangGraph, Claude, Next.js</span>
       </div>
@@ -260,6 +274,7 @@ function Shell({ mode, sidebar, status, children }: { mode: "live" | "demo"; sid
           <span className={`ml-auto tag ${mode === "live" ? "bg-ok/15 text-ok" : "bg-plan/15 text-plan"}`}>
             {mode === "live" ? "live backend" : "demo replay"}
           </span>
+          <nav className="flex gap-3 text-sm"><span className="text-fg">Desk</span><Link className="text-muted hover:text-fg" href="/monitor">Monitor</Link></nav>
           <a className="text-sm text-muted hover:text-fg" href="https://github.com/dakshinsiva/macrodesk" target="_blank" rel="noreferrer">GitHub ↗</a>
         </header>
         {children}

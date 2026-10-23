@@ -12,6 +12,7 @@ Rules that make tools LLM-friendly (and testable):
 from __future__ import annotations
 
 import math
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from functools import lru_cache
 from typing import Optional
@@ -94,27 +95,45 @@ def search_fred(query: str, limit: int = 8) -> str:
     return "\n".join(lines)
 
 
+UNITS = {"lin": "levels", "chg": "change", "ch1": "change from a year ago", "pch": "% change",
+         "pc1": "% change from a year ago", "pca": "compounded annual % change", "log": "natural log"}
+FREQUENCIES = {"d", "w", "bw", "m", "q", "sa", "a"}
+AGGREGATIONS = {"avg", "sum", "eop"}
+
+
 @tool
-def get_series(series_id: str, start: Optional[str] = None, end: Optional[str] = None, last_n: int = 12) -> str:
+def get_series(series_id: str, start: Optional[str] = None, end: Optional[str] = None, last_n: int = 12,
+               units: Optional[str] = None, frequency: Optional[str] = None, aggregation: Optional[str] = None) -> str:
     """Fetch observations for one FRED series id (e.g. 'UNRATE', 'JTSQUR', 'DGS10').
 
     Dates are YYYY-MM-DD. If start is omitted, fetches the last ~3 years.
     Returns the last `last_n` observations plus min/max/mean over the window.
+    Optional FRED-side transforms: units = pc1 (% change from a year ago), pch (% change), chg, ch1, pca, log;
+    frequency = m, q, a (etc.) with aggregation = avg, sum or eop. Prefer these over computing changes yourself.
     Always cite the series id and the observation date of the value you use.
     """
     sid = series_id.upper()
+    if units and units not in UNITS:
+        return f"ERROR: units must be one of {', '.join(UNITS)}"
+    if frequency and frequency not in FREQUENCIES:
+        return f"ERROR: frequency must be one of {', '.join(sorted(FREQUENCIES))}"
+    if aggregation and aggregation not in AGGREGATIONS:
+        return f"ERROR: aggregation must be one of {', '.join(sorted(AGGREGATIONS))}"
     if start is None:
         start = (date.today() - timedelta(days=3 * 365)).isoformat()
     try:
-        s = _client().get_series(sid, start, end)
+        s = _client().get_series(sid, start, end, units=units, frequency=frequency, aggregation=aggregation)
     except FredError as e:
         return f"ERROR: {e}"
     title = REGISTRY[sid].title if sid in REGISTRY else sid
-    stale = _staleness_note(sid, s)
+    stale = "" if frequency else _staleness_note(sid, s)
+    label = _units(sid) if not units or units == "lin" else f"{UNITS[units]}, computed by FRED"
+    if frequency:
+        label += f"; frequency {frequency}" + (f" ({aggregation})" if aggregation else "")
     return (
-        f"{sid}: {title} [{_units(sid)}]{stale}\n"
+        f"{sid}: {title} [{label}]{stale}\n"
         f"window {s.index[0].date()} to {s.index[-1].date()} ({len(s)} obs); "
-        f"min {_fmt(s.min())}, max {_fmt(s.max())}, mean {_fmt(s.mean())} (all in {_units(sid)})\n"
+        f"min {_fmt(s.min())}, max {_fmt(s.max())}, mean {_fmt(s.mean())} (all in {label})\n"
         f"latest {last_n}:\n{_tail_table(s, last_n)}"
     )
 
@@ -470,8 +489,104 @@ def macro_snapshot() -> str:
     return "\n".join(lines)
 
 
+# --------------------------------------------------------------------------- #
+# Term structure and regions
+# --------------------------------------------------------------------------- #
+MATURITIES = [("1M", "DGS1MO", 1 / 12), ("3M", "DGS3MO", 0.25), ("6M", "DGS6MO", 0.5), ("1Y", "DGS1", 1),
+              ("2Y", "DGS2", 2), ("3Y", "DGS3", 3), ("5Y", "DGS5", 5), ("7Y", "DGS7", 7), ("10Y", "DGS10", 10),
+              ("20Y", "DGS20", 20), ("30Y", "DGS30", 30)]
+STATES = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS",
+          "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC",
+          "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+
+
+def term_structure_data(as_of: Optional[str] = None) -> dict:
+    """Yields at every maturity on the latest common date (or as_of) and one year earlier."""
+    end = pd.Timestamp(as_of or date.today())
+    start = (end - pd.Timedelta(days=400)).date().isoformat()
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        series = dict(zip([m[1] for m in MATURITIES],
+                          pool.map(lambda sid: _client().get_series(sid, start, end.date().isoformat()), [m[1] for m in MATURITIES])))
+    df = pd.DataFrame(series).dropna()
+    if df.empty:
+        raise FredError("no common date across Treasury maturities in the window")
+    now_d = df.index[-1]
+    ago = df[df.index <= now_d - pd.Timedelta(days=365)]
+    ago_d = ago.index[-1] if not ago.empty else df.index[0]
+    rows = [{"label": lab, "id": sid, "years": yrs, "now": round(float(df.loc[now_d, sid]), 2),
+             "year_ago": round(float(df.loc[ago_d, sid]), 2)} for lab, sid, yrs in MATURITIES]
+    return {"date": now_d.date().isoformat(), "year_ago_date": ago_d.date().isoformat(), "rows": rows}
+
+
+@tool
+def term_structure(as_of: Optional[str] = None) -> str:
+    """The whole Treasury yield curve (1M to 30Y) on the latest date and one year earlier, with the change
+    at each maturity and where the curve is inverted. Use for curve shape, steepening/flattening questions.
+    """
+    try:
+        d = term_structure_data(as_of)
+    except FredError as e:
+        return f"ERROR: {e}"
+    lines = [f"Treasury curve (percent) on {d['date']} vs {d['year_ago_date']}. Cite as (DGS10, {d['date']}) etc.",
+             "maturity  series   now     year_ago  change"]
+    for r in d["rows"]:
+        lines.append(f"{r['label']:9} {r['id']:8} {r['now']:6.2f}  {r['year_ago']:8.2f}  {r['now'] - r['year_ago']:+.2f}")
+    inv = [f"{a['label']}>{b['label']}" for a, b in zip(d["rows"], d["rows"][1:]) if a["now"] > b["now"]]
+    lines.append("inverted segments now: " + (", ".join(inv) if inv else "none"))
+    return "\n".join(lines)
+
+
+def regional_data(states: Optional[list[str]] = None) -> dict:
+    sts = [s.upper() for s in (states or STATES)][:51]
+    start = (date.today() - timedelta(days=3 * 365)).isoformat()
+
+    def one(st: str):
+        try:
+            s = _client().get_series(f"{st}UR", start)
+            return {"state": st, "id": f"{st}UR", "latest": float(s.iloc[-1]), "date": s.index[-1].date().isoformat(),
+                    "change_12m": round(float(s.iloc[-1] - s.iloc[max(0, len(s) - 13)]), 2)}
+        except FredError:
+            return None
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        rows = [r for r in pool.map(one, sts) if r]
+    rows.sort(key=lambda r: r["change_12m"], reverse=True)
+    try:
+        u = _client().get_series("UNRATE", start)
+        nat = {"latest": float(u.iloc[-1]), "date": u.index[-1].date().isoformat(),
+               "change_12m": round(float(u.iloc[-1] - u.iloc[max(0, len(u) - 13)]), 2)}
+    except FredError:
+        nat = None
+    return {"rows": rows, "national": nat, "missing": [s for s in sts if s not in {r["state"] for r in rows}]}
+
+
+@tool
+def regional_compare(states: Optional[list[str]] = None, top: int = 10) -> str:
+    """State unemployment rates ({ST}UR series, percent, SA): latest value and 12-month change, ranked by
+    change, against the national UNRATE. Omit `states` for all 50 states plus DC. Use for regional questions.
+    """
+    d = regional_data(states)
+    if not d["rows"]:
+        return "ERROR: no state series could be fetched"
+    rows = d["rows"]
+    show = rows if len(rows) <= 2 * top else rows[:top] + rows[-top:]
+    lines = ["State unemployment rate (percent, SA), ranked by 12-month change:", "state  series  latest  12m chg  date"]
+    for i, r in enumerate(show):
+        if len(rows) > 2 * top and i == top:
+            lines.append(f"...    ({len(rows) - 2 * top} states in between)")
+        lines.append(f"{r['state']:6} {r['id']:7} {r['latest']:6.1f}  {r['change_12m']:+6.1f}  {r['date']}")
+    if d["national"]:
+        n = d["national"]
+        lines.append(f"national UNRATE {n['latest']:.1f} ({n['date']}), 12m change {n['change_12m']:+.1f}")
+    rising = sum(r["change_12m"] > 0 for r in rows)
+    lines.append(f"{rising} of {len(rows)} states have a higher rate than 12 months earlier")
+    if d["missing"]:
+        lines.append("not retrieved: " + ", ".join(d["missing"]))
+    return "\n".join(lines)
+
+
 ALL_TOOLS = [list_known_series, search_fred, get_series, compute_change, compare_series,
              yield_curve_snapshot, recession_periods, plot_series,
              series_as_of, revision_history, release_calendar,
              extremes, percentile_rank, compare_to_prepandemic, sahm_rule, recession_probability, correlate,
-             macro_snapshot]
+             macro_snapshot, term_structure, regional_compare]

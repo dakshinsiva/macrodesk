@@ -12,7 +12,7 @@ type Reg = { id: string; title: string; units: string; frequency: string; topic:
 const REG = registry as Reg[];
 export const COMMANDS: [string, string][] = [
   ["/new", "start a new thread"], ["/threads", "toggle the threads panel"], ["/prefs", "show remembered feedback"],
-  ["/brief", "run the daily brief playbook"], ["/demo", "replay the recorded run"], ["/help", "keyboard shortcuts"],
+  ["/brief", "run the daily brief playbook"], ["/monitor", "curve, recession risk, states"], ["/demo", "replay the recorded run"], ["/help", "keyboard shortcuts"],
 ];
 const HISTORY_KEY = "macrodesk.history";
 

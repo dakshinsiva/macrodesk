@@ -22,7 +22,7 @@ ToolName = Literal[
     "compare_series", "yield_curve_snapshot", "recession_periods", "plot_series",
     "series_as_of", "revision_history", "release_calendar",
     "extremes", "percentile_rank", "compare_to_prepandemic", "sahm_rule", "recession_probability", "correlate",
-    "macro_snapshot",
+    "macro_snapshot", "term_structure", "regional_compare",
 ]
 
 

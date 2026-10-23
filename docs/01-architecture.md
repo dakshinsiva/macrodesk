@@ -165,3 +165,13 @@ The desk takes its interaction model from a trading terminal rather than a chat 
   (`lib/evidenceTable.ts`); `Enter`/`E`/`Esc` shortcuts handled at the window level, never
   inside inputs.
 
+## Monitor page (2026-10-23)
+
+`/monitor` is a second screen for the desk: `web/src/app/api/monitor/route.ts` builds the Treasury
+curve (11 maturities, latest common date vs a year earlier), the Sahm rule and curve-probit
+gauges, and 51 state unemployment series from FRED with a small concurrency pool and hourly
+caching, sharing its arithmetic with `web/src/lib/monitor.ts` (unit-tested against the Python
+tools' numbers). Without a server-side key it serves `web/src/demo/monitor.json`, recorded by
+`scripts/record_monitor.py`. The agent gained the matching tools, `term_structure` and
+`regional_compare`, and FRED-side transforms on `get_series`.
+
