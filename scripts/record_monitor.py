@@ -7,7 +7,7 @@ import math
 from datetime import datetime, timezone
 
 from macrodesk.config import PROJECT_ROOT
-from macrodesk.tools import _client, regional_data, term_structure_data
+from macrodesk.tools import _client, international_data, regional_data, term_structure_data
 
 
 def risk() -> dict:
@@ -27,7 +27,7 @@ def risk() -> dict:
 
 if __name__ == "__main__":
     out = {"asOf": datetime.now(timezone.utc).isoformat(timespec="seconds"), "curve": term_structure_data(),
-           "risk": risk(), "states": regional_data()}
+           "risk": risk(), "states": regional_data(), "international": international_data()}
     path = PROJECT_ROOT / "web/src/demo/monitor.json"
     path.write_text(json.dumps(out, indent=1))
     print(f"wrote {path}: curve {out['curve']['date']}, {len(out['states']['rows'])} states, "

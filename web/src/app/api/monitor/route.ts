@@ -3,7 +3,7 @@
  * Live from FRED (server-side key, each upstream call cached an hour); otherwise the recorded snapshot.
  */
 import snapshot from "@/demo/monitor.json";
-import { MATURITIES, STATES, monthlyMean, recessionProb, sahm, type MonitorData, type Point } from "@/lib/monitor";
+import { COUNTRIES, MATURITIES, STATES, isStale, monthlyMean, recessionProb, sahm, type MonitorData, type Point } from "@/lib/monitor";
 
 const KEY = () => process.env.FRED_API_KEY ?? "";
 
@@ -45,6 +45,11 @@ async function live(): Promise<MonitorData> {
       return { state: st, id: `${st}UR`, latest: l.v, date: l.d, change_12m: +(l.v - b.v).toFixed(2) }; } catch { return null; }
   })).filter((r): r is NonNullable<typeof r> => !!r).sort((a, b) => b.change_12m - a.change_12m);
   const ul = unrate[unrate.length - 1], ub = unrate[Math.max(0, unrate.length - 13)];
+  const ccs = Object.keys(COUNTRIES);
+  const intl = (await pool(ccs, 6, async (cc) => {
+    try { const p = await obs(`LRHUTTTT${cc}M156S`, longStart); const l = p[p.length - 1], b = p[Math.max(0, p.length - 13)];
+      return { country: cc, name: COUNTRIES[cc], id: `LRHUTTTT${cc}M156S`, latest: +l.v.toFixed(2), date: l.d, change_12m: +(l.v - b.v).toFixed(2), stale: isStale(l.d, now) }; } catch { return null; }
+  })).filter((r): r is NonNullable<typeof r> => !!r).sort((a, b) => a.latest - b.latest);
 
   return {
     asOf: now.toISOString(),
@@ -53,6 +58,7 @@ async function live(): Promise<MonitorData> {
       sahm: { value: s[s.length - 1].v, date: s[s.length - 1].d, history: s.slice(-24) },
       probit: { spread: +lastM.v.toFixed(2), prob: recessionProb(lastM.v), date: lastM.d, history: m.slice(-24).map((p) => ({ d: p.d, v: recessionProb(p.v) })) },
     },
+    international: { rows: intl, missing: ccs.filter((c) => !intl.some((r) => r.country === c)) },
     states: { rows: stateRows, national: { latest: ul.v, date: ul.d, change_12m: +(ul.v - ub.v).toFixed(2) }, missing: STATES.filter((st) => !stateRows.some((r) => r.state === st)) },
   };
 }

@@ -133,3 +133,16 @@ def test_regional_compare_ranks_states_and_reports_missing(fake_fred):
     out = _t.regional_compare.invoke({"states": ["CA", "TX", "NY", "ZZ"]})
     assert "CA     CAUR" in out and "national UNRATE" in out and "not retrieved: ZZ" in out
     assert "of 3 states have a higher rate" in out
+
+
+def test_international_compare_flags_stale_and_missing(fake_fred, monkeypatch):
+    import pandas as pd
+    real = fake_fred.get_series
+    def fake(series_id, start=None, end=None, **kw):
+        if series_id == "LRHUTTTTDEM156S": return real("UNRATE", start, end)
+        if series_id == "LRHUTTTTUSM156S":
+            s = real("UNRATE", start, end); return s[s.index <= "2025-09-01"]
+        return real(series_id, start, end)
+    monkeypatch.setattr(fake_fred, "get_series", fake)
+    out = _t.international_compare.invoke({"countries": ["US", "DE", "ZZ"]})
+    assert "DE       LRHUTTTTDEM156S" in out and "(stale" in out and "use UNRATE" in out and "not available: ZZ" in out

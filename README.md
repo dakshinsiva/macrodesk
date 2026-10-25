@@ -59,7 +59,7 @@ flowchart LR
 
 | Node | Model? | What it does |
 |---|---|---|
-| **planner** | yes, structured output | Turns the question (plus anything you said at earlier reviews, and earlier turns in the thread) into a list of tool calls over 20 tools and a curated registry of 24 FRED series. Every step's arguments are validated against the tool's schema before anything runs |
+| **planner** | yes, structured output | Turns the question (plus anything you said at earlier reviews, and earlier turns in the thread) into a list of tool calls over 23 tools and a curated registry of 24 FRED series. Every step's arguments are validated against the tool's schema before anything runs |
 | **review** | no | Pauses the graph with `interrupt()` and shows the plan. Resume with "approve" or with feedback; feedback is also written to long-term memory |
 | **fetch** | no | Executes the steps concurrently against FRED through a cached, retrying client. Errors are recorded as evidence, not raised. Evidence from earlier turns is carried forward for follow-ups |
 | **analyst** | yes | Writes the answer from the evidence block only, citing `(SERIES_ID, YYYY-MM-DD)` and stating units |
@@ -68,7 +68,7 @@ flowchart LR
 
 Stage 1 of the project, a prebuilt ReAct agent with the same tools, is kept as `--v1` for comparison.
 
-**The 20 tools.** Retrieval: `list_known_series`, `search_fred`, `get_series`, `compare_series`,
+**The 23 tools.** Retrieval: `list_known_series`, `search_fred`, `get_series`, `compare_series`,
 `compute_change`, `yield_curve_snapshot`, `recession_periods`, `plot_series`. Vintages and releases
 (ALFRED): `series_as_of` (what was known on a date), `revision_history` (first print to latest),
 `release_calendar` (past and next release dates). Context and analytics: `extremes` (max and min
@@ -76,7 +76,10 @@ Stage 1 of the project, a prebuilt ReAct agent with the same tools, is kept as `
 (NY Fed-style probit on the 10y-3m spread), `correlate`, `macro_snapshot`. Curve and regions:
 `term_structure` (1M to 30Y, now vs a year ago) and `regional_compare` (all 50 states plus DC).
 `get_series` also passes FRED's own transforms through: `units` (e.g. `pc1`, % change from a year
-ago) and `frequency` + `aggregation` (e.g. quarterly averages of a daily series).
+ago) and `frequency` + `aggregation` (e.g. quarterly averages of a daily series). Plus
+`explain_series` (what a series is, FRED's notes, how to read it, its history),
+`international_compare` (OECD harmonised unemployment for nine economies, stale mirrors flagged)
+and `check_alerts` (your threshold rules, below).
 
 ## The research desk
 
@@ -105,7 +108,8 @@ arrival in light mode: six indicators with sparklines and 12-month changes; clic
   year ago with inverted segments flagged, recession-risk gauges (Sahm rule, curve probit) with
   24-month history, and a sortable, filterable table of state unemployment and its 12-month change.
   Any series opens its card; "ask the desk" buttons deep-link a question into the agent (`/?q=`).
-  Live from FRED when the server has a key, a recorded snapshot otherwise.
+  A world strip compares harmonised unemployment across nine economies. Live from FRED when the
+  server has a key, a recorded snapshot otherwise.
 - **Monitor pane.** On wide screens, charts, sources and follow-ups stay in a right-hand pane while
   the answer scrolls on the left.
 - **Evidence as tables.** Date-indexed tool results render as aligned numeric tables with a raw
@@ -187,6 +191,13 @@ npm test && npm run test:e2e    # vitest unit tests; Playwright replay test and 
 Set `DATABASE_URL` to a Postgres URL and both the checkpointer and the Store move there, for
 several machines or a hosted server sharing threads and memory; SQLite otherwise.
 
+**Alerts.** `alerts.yaml` holds threshold rules (Sahm rule, curve inversions, claims above 300k,
+unemployment up half a point, core PCE above 3%, quits below 2%; FRED transforms allowed).
+`uv run macrodesk alerts` prints each rule's value and exits 1 if any fired, so it can run from
+cron; `.github/workflows/alerts.yml` runs it on weekday afternoons once `FRED_API_KEY` is a
+repository secret, and a fired rule fails the job, which GitHub emails you about. The agent can
+check them too ("are any of my alerts firing?").
+
 Inside the CLI: `/state`, `/history`, `/replay N` (time travel to a checkpoint), `/threads`,
 `/thread <name|new|rename|delete>`, `/prefs`, `/forget`. `--thread NAME` resumes a conversation,
 `--last` the most recent one, `--user NAME` keeps a separate memory per person.
@@ -257,7 +268,7 @@ an earlier answer, and a leaky number whitelist. [docs/02-debugging.md](docs/02-
 | Path | What it is |
 |---|---|
 | `src/macrodesk/graph.py`, `nodes.py`, `state.py` | The Stage 2 graph: planner, review, fetch, analyst, critic, finalize |
-| `src/macrodesk/tools.py`, `fred/` | Twenty tools over a cached, retrying FRED client (incl. ALFRED vintages) and a curated series registry |
+| `src/macrodesk/tools.py`, `fred/` | Twenty-three tools over a cached, retrying FRED client (incl. ALFRED vintages) and a curated series registry |
 | `src/macrodesk/charts.py` | Small-multiple PNG charts for the CLI; JSON payloads for the web |
 | `src/macrodesk/memory.py`, `threads.py`, `persistence.py` | Store-backed plan memory; thread list, rename, delete; SQLite or Postgres behind one factory |
 | `src/macrodesk/cli.py`, `brief.py` | REPL with checkpoint inspection and time travel; the daily brief |

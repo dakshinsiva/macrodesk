@@ -8,6 +8,11 @@ test("monitor page: curve, gauges, sortable and filterable states, series card, 
   await expect(page.getByText(/no inversions|inverted:/)).toBeVisible();
   await expect(page.getByText("Sahm rule (UNRATE)")).toBeVisible();
   await expect(page.getByText("Recession probability, 12 months ahead")).toBeVisible();
+  const world = page.getByRole("region", { name: "international unemployment" });
+  await expect(world.getByText("Germany")).toBeVisible();
+  await world.getByRole("button", { name: /Japan/ }).click();
+  await expect(page.getByRole("dialog", { name: /LRHUTTTTJPM156S series card/ })).toBeVisible();
+  await page.keyboard.press("Escape");
   const table = page.getByRole("region", { name: "state unemployment" });
   const firstState = () => table.locator("tbody tr").first().locator("td").first().innerText();
   await table.getByRole("columnheader", { name: /^state/ }).click();

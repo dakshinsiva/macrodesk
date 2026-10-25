@@ -175,3 +175,14 @@ tools' numbers). Without a server-side key it serves `web/src/demo/monitor.json`
 `scripts/record_monitor.py`. The agent gained the matching tools, `term_structure` and
 `regional_compare`, and FRED-side transforms on `get_series`.
 
+## Explainer, world view, alerts (2026-10-25)
+
+`explain_series` reads FRED's series endpoint directly (title, units, seasonal adjustment, notes)
+and pairs it with the registry's reading guide and the series history. `international_compare`
+uses the OECD harmonised unemployment mirrors (`LRHUTTTT{CC}M156S`) and flags any country whose
+latest observation is older than about five months; the US mirror stopped in 2025-09, so the
+tool points to UNRATE instead. The OECD CPI mirrors all stopped in early 2025, so inflation is
+deliberately not compared across countries. `src/macrodesk/alerts.py` evaluates YAML rules
+(`above`, `below`, `change_above`, `change_below`, optional FRED `units`, optional derived Sahm
+rule) and powers the CLI command, the agent tool and the daily workflow.
+

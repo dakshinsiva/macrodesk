@@ -1,0 +1,40 @@
+# Threshold alerts: `uv run macrodesk alerts` evaluates these and exits 1 if any fire.
+# Conditions: above | below | change_above | change_below (change over `periods` observations).
+- id: sahm-rule
+  series: UNRATE
+  derived: sahm
+  condition: above
+  threshold: 0.5
+  note: Sahm rule triggered; historically marks the start of a recession.
+- id: curve-inverted-10y2y
+  series: T10Y2Y
+  condition: below
+  threshold: 0
+  note: 10y-2y Treasury spread is negative (inverted curve).
+- id: curve-inverted-10y3m
+  series: T10Y3M
+  condition: below
+  threshold: 0
+  note: 10y-3m spread is negative; the NY Fed's preferred recession signal.
+- id: claims-elevated
+  series: ICSA
+  condition: above
+  threshold: 300000
+  note: Initial jobless claims above 300k.
+- id: unemployment-rising
+  series: UNRATE
+  condition: change_above
+  threshold: 0.5
+  periods: 12
+  note: Unemployment up more than half a point in a year.
+- id: core-pce-hot
+  series: PCEPILFE
+  units: pc1
+  condition: above
+  threshold: 3.0
+  note: Core PCE inflation above 3% year over year.
+- id: quits-depressed
+  series: JTSQUR
+  condition: below
+  threshold: 2.0
+  note: Quits rate below 2%; workers reluctant to switch jobs.

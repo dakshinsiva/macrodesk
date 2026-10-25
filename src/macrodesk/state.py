@@ -23,6 +23,7 @@ ToolName = Literal[
     "series_as_of", "revision_history", "release_calendar",
     "extremes", "percentile_rank", "compare_to_prepandemic", "sahm_rule", "recession_probability", "correlate",
     "macro_snapshot", "term_structure", "regional_compare",
+    "explain_series", "international_compare", "check_alerts",
 ]
 
 

@@ -2,12 +2,14 @@
 export type Point = { d: string; v: number };
 export type CurveRow = { label: string; id: string; years: number; now: number; year_ago: number };
 export type StateRow = { state: string; id: string; latest: number; date: string; change_12m: number };
+export type CountryRow = { country: string; name: string; id: string; latest: number; date: string; change_12m: number; stale: boolean };
 export type MonitorData = {
   asOf: string;
   recorded?: boolean;
   curve: { date: string; year_ago_date: string; rows: CurveRow[] };
   risk: { sahm: { value: number; date: string; history: Point[] }; probit: { spread: number; prob: number; date: string; history: Point[] } };
   states: { rows: StateRow[]; national: { latest: number; date: string; change_12m: number } | null; missing: string[] };
+  international?: { rows: CountryRow[]; missing: string[] };
 };
 
 export const MATURITIES: [string, string, number][] = [
@@ -42,3 +44,7 @@ export function monthlyMean(points: Point[]): Point[] {
 /** Segments where a shorter maturity yields more than the next longer one. */
 export const invertedSegments = (rows: CurveRow[]) =>
   rows.slice(0, -1).flatMap((r, i) => (r.now > rows[i + 1].now ? [`${r.label}>${rows[i + 1].label}`] : []));
+
+export const COUNTRIES: Record<string, string> = { US: "United States", DE: "Germany", GB: "United Kingdom", JP: "Japan", FR: "France", CA: "Canada", IT: "Italy", KR: "South Korea", AU: "Australia" };
+/** An observation older than ~5 months is stale for a monthly series (OECD mirrors lag or stop). */
+export const isStale = (d: string, now = new Date()) => (now.getTime() - new Date(d).getTime()) / 864e5 > 150;

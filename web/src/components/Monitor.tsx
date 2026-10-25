@@ -130,6 +130,30 @@ export function Monitor() {
             </div>
           </div>
 
+          {data.international && data.international.rows.length > 0 && (
+            <section className="card" aria-label="international unemployment">
+              <header className="card-h flex-wrap">
+                <span className="tag bg-plan/15 text-plan">world</span>
+                <span className="text-sm">Harmonised unemployment rate, OECD via FRED</span>
+                <span className="text-xs text-muted">lowest first · comparable definitions across countries</span>
+              </header>
+              <div className="grid sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-2 p-3">
+                {data.international.rows.map((r) => (
+                  <button key={r.id} onClick={() => setSeries(r.id)} className={`rounded-md border border-line px-2 py-1.5 text-left hover:border-accent/60 ${r.stale ? "opacity-60" : ""}`}
+                    title={r.stale ? "stale: the OECD mirror on FRED has not updated this country recently" : r.id}>
+                    <div className="text-[11px] text-muted flex justify-between"><span>{r.name}</span><span className="font-mono">{r.country}</span></div>
+                    <div className="text-lg font-semibold tabular-nums leading-tight">{r.latest.toFixed(1)}%</div>
+                    <div className={`text-[11px] tabular-nums ${r.change_12m > 0 ? "text-bad" : r.change_12m < 0 ? "text-ok" : "text-muted"}`}>{r.change_12m > 0 ? "+" : ""}{r.change_12m.toFixed(1)} pp 12m</div>
+                    <div className="text-[10px] text-muted">{r.date}{r.stale ? " · stale" : ""}</div>
+                  </button>
+                ))}
+              </div>
+              {data.international.rows.some((r) => r.stale && r.country === "US") && (
+                <div className="px-3 pb-2 text-[11px] text-muted">The OECD mirror for the US has stopped updating; the current US rate is UNRATE (BLS) in the states table header.</div>
+              )}
+            </section>
+          )}
+
           <section className="card" aria-label="state unemployment">
             <header className="card-h flex-wrap">
               <span className="tag bg-evidence/15 text-evidence">states</span>

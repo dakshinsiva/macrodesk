@@ -105,7 +105,9 @@ that will gather ALL the evidence needed to answer the question. Rules:
   "when is the next release" -> release_calendar; "is this high historically" -> percentile_rank;
   "back to normal / vs 2019" -> compare_to_prepandemic; recession risk -> sahm_rule and recession_probability;
   "state of the economy" -> macro_snapshot; "do X and Y move together" -> correlate;
-  curve shape / steepening / flattening -> term_structure; states or regions -> regional_compare.
+  curve shape / steepening / flattening -> term_structure; states or regions -> regional_compare;
+  "what is X / how do I read X" -> explain_series; other countries -> international_compare;
+  "are my alerts firing / any warning signs" -> check_alerts.
 - For year-over-year rates or quarterly averages, pass FRED transforms to get_series
   (units="pc1", or frequency="q" with aggregation="avg") instead of computing them.
 - Include plot_series only if the user asks for a chart/graph/plot.

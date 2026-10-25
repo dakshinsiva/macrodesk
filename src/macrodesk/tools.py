@@ -585,8 +585,98 @@ def regional_compare(states: Optional[list[str]] = None, top: int = 10) -> str:
     return "\n".join(lines)
 
 
+# --------------------------------------------------------------------------- #
+# Explainer, international comparison, alerts
+# --------------------------------------------------------------------------- #
+COUNTRIES = {"US": "United States", "DE": "Germany", "GB": "United Kingdom", "JP": "Japan", "FR": "France",
+             "CA": "Canada", "IT": "Italy", "KR": "South Korea", "AU": "Australia"}
+
+
+@tool
+def explain_series(series_id: str) -> str:
+    """What a FRED series is and how to read it: title, units, frequency, seasonal adjustment, source notes
+    from FRED, the registry's reading guide, and its history (range, mean, latest). Use for 'what is X' or
+    'how should I interpret X'.
+    """
+    sid = series_id.upper()
+    try:
+        meta = _client()._api("series", series_id=sid)["seriess"][0]
+        s = _client().get_series(sid, "1990-01-01")
+    except (FredError, KeyError, IndexError) as e:
+        return f"ERROR: could not load {sid}: {e}"
+    notes = " ".join((meta.get("notes") or "").split())
+    reading = REGISTRY[sid].reading if sid in REGISTRY else None
+    lo, hi = s.idxmin(), s.idxmax()
+    lines = [f"{sid}: {meta['title']}",
+             f"units {meta['units']} | frequency {meta['frequency']} | {meta['seasonal_adjustment']} | "
+             f"observations {meta['observation_start']} to {meta['observation_end']} | last updated {meta['last_updated'][:10]}"]
+    if reading:
+        lines.append(f"how to read it: {reading}")
+    if notes:
+        lines.append(f"FRED notes: {notes[:700]}{'…' if len(notes) > 700 else ''}")
+    lines.append(f"history since {s.index[0].date()}: min {_fmt(float(s.min()))} ({lo.date()}), max {_fmt(float(s.max()))} "
+                 f"({hi.date()}), mean {_fmt(float(s.mean()))}; latest {_fmt(float(s.iloc[-1]))} ({s.index[-1].date()})")
+    return "\n".join(lines)
+
+
+def international_data(countries: Optional[list[str]] = None) -> dict:
+    ccs = [c.upper() for c in (countries or list(COUNTRIES))]
+    start = (date.today() - timedelta(days=3 * 365)).isoformat()
+
+    def one(cc: str):
+        sid = f"LRHUTTTT{cc}M156S"
+        try:
+            s = _client().get_series(sid, start)
+        except FredError:
+            return None
+        age = (date.today() - s.index[-1].date()).days
+        return {"country": cc, "name": COUNTRIES.get(cc, cc), "id": sid, "latest": round(float(s.iloc[-1]), 2),
+                "date": s.index[-1].date().isoformat(), "change_12m": round(float(s.iloc[-1] - s.iloc[max(0, len(s) - 13)]), 2),
+                "stale": age > 150}
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        rows = [r for r in pool.map(one, ccs) if r]
+    rows.sort(key=lambda r: r["latest"])
+    return {"rows": rows, "missing": [c for c in ccs if c not in {r["country"] for r in rows}]}
+
+
+@tool
+def international_compare(countries: Optional[list[str]] = None) -> str:
+    """Harmonised unemployment rates (OECD, mirrored on FRED as LRHUTTTT{CC}M156S, percent, SA) across
+    the US, Germany, UK, Japan, France, Canada, Italy, Korea and Australia, with 12-month changes.
+    Flags countries whose latest observation is old. Use for cross-country labour-market questions.
+    """
+    d = international_data(countries)
+    if not d["rows"]:
+        return "ERROR: no international series could be fetched"
+    lines = ["Harmonised unemployment rate (OECD via FRED, percent, SA), lowest first:",
+             "country  series             latest  12m chg  date"]
+    for r in d["rows"]:
+        flag = "  (stale: OECD mirror not updated recently)" if r["stale"] else ""
+        lines.append(f"{r['country']:7}  {r['id']:17} {r['latest']:6.2f}  {r['change_12m']:+6.2f}  {r['date']}{flag}")
+    if any(r["country"] == "US" and r["stale"] for r in d["rows"]):
+        lines.append("for the current US rate use UNRATE (BLS), which is not harmonised but is up to date")
+    if d["missing"]:
+        lines.append("not available: " + ", ".join(d["missing"]))
+    return "\n".join(lines)
+
+
+@tool
+def check_alerts() -> str:
+    """Evaluate the user's threshold alerts (alerts.yaml: Sahm rule, curve inversions, claims, unemployment
+    change, core PCE, quits) against the latest FRED data and report which fired. Use for 'are any of my
+    alerts firing' or 'any warning signs right now'.
+    """
+    from macrodesk.alerts import evaluate, format_results, load_rules
+    try:
+        return format_results(evaluate(load_rules()))
+    except (OSError, ValueError) as e:
+        return f"ERROR: {e}"
+
+
 ALL_TOOLS = [list_known_series, search_fred, get_series, compute_change, compare_series,
              yield_curve_snapshot, recession_periods, plot_series,
              series_as_of, revision_history, release_calendar,
              extremes, percentile_rank, compare_to_prepandemic, sahm_rule, recession_probability, correlate,
-             macro_snapshot, term_structure, regional_compare]
+             macro_snapshot, term_structure, regional_compare,
+             explain_series, international_compare, check_alerts]

@@ -1,0 +1,31 @@
+name: alerts (daily)
+
+on:
+  schedule:
+    - cron: "23 13 * * 1-5"   # 13:23 UTC on weekdays, after most US releases
+  workflow_dispatch:
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    # Needs the FRED_API_KEY repository secret; skips itself without it so forks stay green.
+    # A fired rule fails the job, which GitHub reports by email to the repository owner.
+    env:
+      FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.FRED_API_KEY != ''
+      - uses: astral-sh/setup-uv@v5
+        if: env.FRED_API_KEY != ''
+        with:
+          python-version: "3.12"
+      - if: env.FRED_API_KEY != ''
+        run: uv sync --frozen
+      - name: evaluate alerts.yaml
+        if: env.FRED_API_KEY != ''
+        run: uv run macrodesk alerts | tee alerts.txt
+      - uses: actions/upload-artifact@v4
+        if: always() && env.FRED_API_KEY != ''
+        with:
+          name: alerts
+          path: alerts.txt

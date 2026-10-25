@@ -1,85 +1,85 @@
 {
- "asOf": "2026-10-23T06:54:34+00:00",
+ "asOf": "2026-10-25T14:33:45+00:00",
  "curve": {
-  "date": "2026-10-21",
-  "year_ago_date": "2025-10-21",
+  "date": "2026-10-22",
+  "year_ago_date": "2025-10-22",
   "rows": [
    {
     "label": "1M",
     "id": "DGS1MO",
     "years": 0.08333333333333333,
-    "now": 4.09,
-    "year_ago": 4.12
+    "now": 4.11,
+    "year_ago": 4.11
    },
    {
     "label": "3M",
     "id": "DGS3MO",
     "years": 0.25,
-    "now": 4.25,
+    "now": 4.22,
     "year_ago": 3.96
    },
    {
     "label": "6M",
     "id": "DGS6MO",
     "years": 0.5,
-    "now": 4.35,
+    "now": 4.29,
     "year_ago": 3.78
    },
    {
     "label": "1Y",
     "id": "DGS1",
     "years": 1,
-    "now": 4.52,
-    "year_ago": 3.56
+    "now": 4.41,
+    "year_ago": 3.55
    },
    {
     "label": "2Y",
     "id": "DGS2",
     "years": 2,
-    "now": 4.81,
+    "now": 4.65,
     "year_ago": 3.45
    },
    {
     "label": "3Y",
     "id": "DGS3",
     "years": 3,
-    "now": 4.89,
-    "year_ago": 3.46
+    "now": 4.72,
+    "year_ago": 3.44
    },
    {
     "label": "5Y",
     "id": "DGS5",
     "years": 5,
-    "now": 4.95,
+    "now": 4.78,
     "year_ago": 3.56
    },
    {
     "label": "7Y",
     "id": "DGS7",
     "years": 7,
-    "now": 5.03,
+    "now": 4.86,
     "year_ago": 3.74
    },
    {
     "label": "10Y",
     "id": "DGS10",
     "years": 10,
-    "now": 5.13,
-    "year_ago": 3.98
+    "now": 4.96,
+    "year_ago": 3.97
    },
    {
     "label": "20Y",
     "id": "DGS20",
     "years": 20,
-    "now": 5.47,
-    "year_ago": 4.53
+    "now": 5.32,
+    "year_ago": 4.52
    },
    {
     "label": "30Y",
     "id": "DGS30",
     "years": 30,
-    "now": 5.42,
-    "year_ago": 4.55
+    "now": 5.29,
+    "year_ago": 4.54
    }
   ]
  },
@@ -187,8 +187,8 @@
    ]
   },
   "probit": {
-   "spread": 0.95,
-   "prob": 12.9,
+   "spread": 0.94,
+   "prob": 13.0,
    "date": "2026-10-31",
    "history": [
     {
@@ -285,7 +285,7 @@
     },
     {
      "d": "2026-10-31",
-     "v": 12.9
+     "v": 13.0
     }
    ]
   }
@@ -655,6 +655,92 @@
    "date": "2026-09-01",
    "change_12m": -0.1
   },
+  "missing": []
+ },
+ "international": {
+  "rows": [
+   {
+    "country": "JP",
+    "name": "Japan",
+    "id": "LRHUTTTTJPM156S",
+    "latest": 2.5,
+    "date": "2026-08-01",
+    "change_12m": -0.1,
+    "stale": false
+   },
+   {
+    "country": "KR",
+    "name": "South Korea",
+    "id": "LRHUTTTTKRM156S",
+    "latest": 2.7,
+    "date": "2026-08-01",
+    "change_12m": -0.1,
+    "stale": false
+   },
+   {
+    "country": "DE",
+    "name": "Germany",
+    "id": "LRHUTTTTDEM156S",
+    "latest": 4.0,
+    "date": "2026-08-01",
+    "change_12m": 0.2,
+    "stale": false
+   },
+   {
+    "country": "US",
+    "name": "United States",
+    "id": "LRHUTTTTUSM156S",
+    "latest": 4.4,
+    "date": "2025-09-01",
+    "change_12m": 0.3,
+    "stale": true
+   },
+   {
+    "country": "AU",
+    "name": "Australia",
+    "id": "LRHUTTTTAUM156S",
+    "latest": 4.65,
+    "date": "2026-08-01",
+    "change_12m": 0.43,
+    "stale": false
+   },
+   {
+    "country": "GB",
+    "name": "United Kingdom",
+    "id": "LRHUTTTTGBM156S",
+    "latest": 4.9,
+    "date": "2026-06-01",
+    "change_12m": 0.2,
+    "stale": false
+   },
+   {
+    "country": "IT",
+    "name": "Italy",
+    "id": "LRHUTTTTITM156S",
+    "latest": 6.2,
+    "date": "2026-08-01",
+    "change_12m": 0.5,
+    "stale": false
+   },
+   {
+    "country": "CA",
+    "name": "Canada",
+    "id": "LRHUTTTTCAM156S",
+    "latest": 6.4,
+    "date": "2026-08-01",
+    "change_12m": -0.7,
+    "stale": false
+   },
+   {
+    "country": "FR",
+    "name": "France",
+    "id": "LRHUTTTTFRM156S",
+    "latest": 8.2,
+    "date": "2026-08-01",
+    "change_12m": 0.4,
+    "stale": false
+   }
+  ],
   "missing": []
  }
 }

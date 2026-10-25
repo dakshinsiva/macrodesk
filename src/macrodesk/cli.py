@@ -8,6 +8,7 @@
     uv run macrodesk --v1 "..."                                    # Stage 1 ReAct agent
     uv run macrodesk --auto-approve "..."                          # skip plan review
     uv run macrodesk brief                                         # write outputs/brief-<date>.md
+    uv run macrodesk alerts [file.yaml]                            # evaluate alerts; exit 1 if any fire
 
 Stage 2 graphs pause after planning: press Enter to approve the plan, or type
 feedback (e.g. "use 10 years of history") to re-plan.
@@ -276,6 +277,12 @@ def main(argv: list[str] | None = None) -> None:
     global AUTO_APPROVE
     AUTO_APPROVE = args.auto_approve
 
+    if args.question and args.question[0] == "alerts":
+        from macrodesk.alerts import evaluate, format_results, load_rules
+        path = args.question[1] if len(args.question) > 1 else None
+        results = evaluate(load_rules(path))
+        print(format_results(results))  # plain stdout: stable columns for logs and cron mail
+        sys.exit(1 if any(r.fired for r in results) else 0)
     if args.question and args.question[0] == "brief":
         AUTO_APPROVE = True
         path = run_brief(graph, thread_id, run_turn)
